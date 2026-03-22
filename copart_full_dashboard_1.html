@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Copart IT Asset Management</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:   #060E1C;
+  --navy2:  #0A1628;
+  --blue:   #0F2444;
+  --mid:    #1A3A6B;
+  --steel:  #2D5FA8;
+  --accent: #E8472A;
+  --gold:   #F59E0B;
+  --good:   #22C55E;
+  --low:    #F97316;
+  --crit:   #EF4444;
+  --dim:    #6B8BB5;
+  --muted:  #3B5A8A;
+  --border: #122040;
+  --white:  #F0F6FF;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+
+html,body{
+  width:100vw;height:100vh;overflow:hidden;
+  background:var(--navy);
+  font-family:'Barlow',sans-serif;
+  color:var(--white);
+}
+
+/* ═══ HEADER ═══ */
+#header{
+  position:fixed;top:0;left:0;right:0;
+  height:52px;
+  background:var(--navy2);
+  border-bottom:2px solid var(--accent);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;z-index:100;
+}
+.logo{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:13px;letter-spacing:4px;
+  background:var(--mid);border:1.5px solid var(--steel);
+  border-radius:40px;padding:4px 14px;color:#fff;
+}
+.hcenter{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:20px;letter-spacing:3px;color:#fff;
+}
+.hcenter span{color:var(--accent);}
+.hright{display:flex;align-items:center;gap:20px;}
+.live-pill{
+  display:flex;align-items:center;gap:6px;
+  background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);
+  border-radius:20px;padding:3px 12px;
+  font-size:10px;font-weight:700;letter-spacing:1px;
+  color:var(--good);text-transform:uppercase;
+}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--good);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+#clock{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:600;color:var(--dim);letter-spacing:1px;}
+
+/* ═══ SECTION CONTAINER ═══ */
+#sections{
+  position:fixed;top:52px;left:0;right:0;bottom:30px;
+  overflow:hidden;
+}
+.section{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  padding:16px 20px;
+  opacity:0;transform:translateX(60px);
+  transition:opacity .6s ease,transform .6s ease;
+  pointer-events:none;overflow:hidden;
+}
+.section.active{
+  opacity:1;transform:translateX(0);
+  pointer-events:all;
+}
+.section.exit{
+  opacity:0;transform:translateX(-60px);
+}
+
+/* ═══ SECTION TITLE ═══ */
+.sec-title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:11px;letter-spacing:3px;
+  color:var(--accent);margin-bottom:12px;
+  display:flex;align-items:center;gap:10px;
+}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ═══ CARDS ═══ */
+.card{
+  background:var(--blue);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:14px 16px;
+  position:relative;overflow:hidden;
+}
+.card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--steel),transparent);
+}
+.card.accent-top::before{background:linear-gradient(90deg,var(--accent),transparent);}
+.card.good-top::before{background:linear-gradient(90deg,var(--good),transparent);}
+.card.gold-top::before{background:linear-gradient(90deg,var(--gold),transparent);}
+.card.crit-top::before{background:linear-gradient(90deg,var(--crit),transparent);}
+
+.card-label{
+  font-size:9px;letter-spacing:2px;font-weight:700;
+  color:var(--muted);text-transform:uppercase;margin-bottom:6px;
+}
+
+/* ═══ KPI ═══ */
+.kpi-val{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:52px;line-height:1;color:#fff;
+}
+.kpi-val.accent{color:var(--accent);}
+.kpi-val.good{color:var(--good);}
+.kpi-val.gold{color:var(--gold);}
+.kpi-val.crit{color:var(--crit);}
+
+/* ═══ GRIDS ═══ */
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.g21{display:grid;grid-template-columns:2fr 1fr;gap:10px;}
+.g12{display:grid;grid-template-columns:1fr 2fr;gap:10px;}
+.row{display:flex;gap:10px;}
+.col{display:flex;flex-direction:column;gap:10px;}
+.f1{flex:1;}
+
+/* ═══ STATUS BADGES ═══ */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;}
+.badge.good{background:rgba(34,197,94,.12);color:var(--good);border:1px solid rgba(34,197,94,.25);}
+.badge.warn{background:rgba(245,158,11,.12);color:var(--gold);border:1px solid rgba(245,158,11,.25);}
+.badge.low {background:rgba(249,115,22,.12);color:var(--low);border:1px solid rgba(249,115,22,.25);}
+.badge.crit{background:rgba(239,68,68,.12);color:var(--crit);border:1px solid rgba(239,68,68,.25);}
+.badge.none{background:rgba(107,139,181,.08);color:var(--dim);border:1px solid rgba(107,139,181,.15);}
+
+/* ═══ TABLE ═══ */
+table{width:100%;border-collapse:collapse;font-size:11px;}
+th{background:#050D1A;color:var(--muted);font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:7px 10px;text-align:left;font-weight:600;}
+td{padding:6px 10px;color:#B0C4DE;border-bottom:1px solid var(--border);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(45,95,168,.06);}
+td.num{font-family:'Barlow Condensed',sans-serif;text-align:right;color:#fff;font-weight:600;font-size:13px;}
+
+/* ═══ PROGRESS BAR ═══ */
+.prog-row{margin-bottom:8px;}
+.prog-row:last-child{margin-bottom:0;}
+.prog-header{display:flex;justify-content:space-between;margin-bottom:3px;}
+.prog-name{font-size:11px;color:#B0C4DE;}
+.prog-val{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:#fff;}
+.prog-bg{background:#0A1628;border-radius:3px;height:4px;}
+.prog-fill{height:4px;border-radius:3px;}
+
+/* ═══ STAT ROW ═══ */
+.stat-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);}
+.stat-row:last-child{border-bottom:none;}
+.stat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.stat-name{font-size:11px;color:#B0C4DE;flex:1;}
+.stat-val{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:#fff;}
+.stat-pct{font-size:10px;color:var(--dim);width:44px;text-align:right;}
+
+/* ═══ FOOTER NAV ═══ */
+#footer{
+  position:fixed;bottom:0;left:0;right:0;height:30px;
+  background:var(--navy2);border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;
+}
+.nav-dots{display:flex;gap:6px;align-items:center;}
+.dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--border);cursor:pointer;
+  transition:all .3s;
+}
+.dot.active{background:var(--accent);width:20px;border-radius:3px;}
+.nav-label{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+.progress-strip{
+  position:fixed;bottom:30px;left:0;height:2px;
+  background:var(--accent);opacity:.6;
+  transition:width linear;
+}
+
+/* chart canvas sizing */
+.ch-wrap{position:relative;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header id="header">
+  <div class="logo">COPART</div>
+  <div class="hcenter">IT Asset <span>Management</span></div>
+  <div class="hright">
+    <div class="live-pill"><div class="live-dot"></div>Live</div>
+    <div id="clock"></div>
+  </div>
+</header>
+
+<!-- PROGRESS STRIP -->
+<div class="progress-strip" id="pstrip" style="width:0%"></div>
+
+<!-- ═══════════════════════════════════════════════
+     SECTIONS
+═══════════════════════════════════════════════ -->
+<div id="sections">
+
+<!-- ── SECTION 0: FLEET OVERVIEW ── -->
+<div class="section active" id="s0">
+  <div class="sec-title">Fleet Overview</div>
+  <div class="g5" style="margin-bottom:10px;">
+    <div class="card" style="text-align:center;padding:18px 10px;">
+      <div class="card-label">Total Assets</div>
+      <div class="kpi-val">70K</div>
+    </div>
+    <div class="card accent-top" style="text-align:center;padding:18px 10px;">
+      <div class="card-label">In Use</div>
+      <div class="kpi-val accent">45.6K</div>
+      <div style="font-size:11px;color:var(--dim);margin-top:2px;">65.23%</div>
+    </div>
+    <div class="card good-top" style="text-align:center;padding:18px 10px;">
+      <div class="card-label">In Stock</div>
+      <div class="kpi-val good">11.6K</div>
+      <div style="font-size:11px;color:var(--dim);margin-top:2px;">16.59%</div>
+    </div>
+    <div class="card gold-top" style="text-align:center;padding:18px 10px;">
+      <div class="card-label">E-Waste</div>
+      <div class="kpi-val gold">11.5K</div>
+      <div style="font-size:11px;color:var(--dim);margin-top:2px;">16.46%</div>
+    </div>
+    <div class="card" style="text-align:center;padding:18px 10px;">
+      <div class="card-label">Pending</div>
+      <div class="kpi-val" style="color:var(--steel);">1.2K</div>
+      <div style="font-size:11px;color:var(--dim);margin-top:2px;">1.72%</div>
+    </div>
+  </div>
+  <div class="g21">
+    <div class="card">
+      <div class="card-label">Asset Status Breakdown</div>
+      <div class="ch-wrap" style="height:340px;">
+        <canvas id="c0bar"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Distribution</div>
+      <div class="ch-wrap" style="height:200px;">
+        <canvas id="c0pie"></canvas>
+      </div>
+      <div style="margin-top:12px;">
+        <div class="stat-row"><span class="stat-dot" style="background:#1A3A6B"></span><span class="stat-name">In Use</span><span class="stat-val">45.6K</span><span class="stat-pct">65.23%</span></div>
+        <div class="stat-row"><span class="stat-dot" style="background:#22C55E"></span><span class="stat-name">In Stock</span><span class="stat-val">11.6K</span><span class="stat-pct">16.59%</span></div>
+        <div class="stat-row"><span class="stat-dot" style="background:#F59E0B"></span><span class="stat-name">E-Waste</span><span class="stat-val">11.5K</span><span class="stat-pct">16.46%</span></div>
+        <div class="stat-row"><span class="stat-dot" style="background:#E8472A"></span><span class="stat-name">Pending</span><span class="stat-val">1.2K</span><span class="stat-pct">1.72%</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTION 1: IN-STOCK BY CATEGORY ── -->
+<div class="section" id="s1">
+  <div class="sec-title">In-Stock Inventory by Category</div>
+  <div class="g12" style="height:calc(100% - 30px);">
+    <div class="col">
+      <div class="card f1">
+        <div class="card-label">Top Categories — Deployable Units</div>
+        <div class="ch-wrap" style="height:380px;">
+          <canvas id="c1bar"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <div class="card-label">Quick Stats</div>
+        <div class="prog-row"><div class="prog-header"><span class="prog-name">Mobile Devices</span><span class="prog-val">3,052</span></div><div class="prog-bg"><div class="prog-fill" style="width:100%;background:var(--steel);"></div></div></div>
+        <div class="prog-row"><div class="prog-header"><span class="prog-name">Desktop</span><span class="prog-val">2,399</span></div><div class="prog-bg"><div class="prog-fill" style="width:78%;background:var(--steel);"></div></div></div>
+        <div class="prog-row"><div class="prog-header"><span class="prog-name">Networking Gear</span><span class="prog-val">1,018</span></div><div class="prog-bg"><div class="prog-fill" style="width:33%;background:var(--steel);"></div></div></div>
+        <div class="prog-row"><div class="prog-header"><span class="prog-name">Monitors</span><span class="prog-val">753</span></div><div class="prog-bg"><div class="prog-fill" style="width:25%;background:var(--steel);"></div></div></div>
+        <div class="prog-row"><div class="prog-header"><span class="prog-name">Laptop</span><span class="prog-val">610</span></div><div class="prog-bg"><div class="prog-fill" style="width:20%;background:var(--steel);"></div></div></div>
+        <div class="prog-row"><div class="prog-header"><span class="prog-name">Camera</span><span class="prog-val">481</span></div><div class="prog-bg"><div class="prog-fill" style="width:16%;background:var(--gold);"></div></div></div>
+        <div class="prog-row"><div class="prog-header"><span class="prog-name">Docking Station</span><span class="prog-val">319</span></div><div class="prog-bg"><div class="prog-fill" style="width:10%;background:var(--gold);"></div></div></div>
+        <div class="prog-row"><div class="prog-header"><span class="prog-name">Printer</span><span class="prog-val">158</span></div><div class="prog-bg"><div class="prog-fill" style="width:5%;background:var(--low);"></div></div></div>
+      </div>
+      <div class="card f1">
+        <div class="card-label">Alert Summary</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+          <span class="badge crit">● 7 Critical</span>
+          <span class="badge low">● 4 Low</span>
+          <span class="badge warn">● 9 Monitor</span>
+          <span class="badge good">● 4 Good</span>
+        </div>
+        <div style="margin-top:10px;">
+          <div class="stat-row"><span class="stat-name" style="color:var(--crit);">Juniper EX4000-24P</span><span class="stat-val" style="color:var(--crit);">1</span><span class="stat-pct"><span class="badge crit">crit</span></span></div>
+          <div class="stat-row"><span class="stat-name" style="color:var(--crit);">FortiGate 401F</span><span class="stat-val" style="color:var(--crit);">2</span><span class="stat-pct"><span class="badge crit">crit</span></span></div>
+          <div class="stat-row"><span class="stat-name" style="color:var(--crit);">Juniper EX4000-48P</span><span class="stat-val" style="color:var(--crit);">2</span><span class="stat-pct"><span class="badge crit">crit</span></span></div>
+          <div class="stat-row"><span class="stat-name" style="color:var(--low);">BlueDriver-LSB4</span><span class="stat-val" style="color:var(--low);">17</span><span class="stat-pct"><span class="badge low">low</span></span></div>
+          <div class="stat-row"><span class="stat-name" style="color:var(--gold);">Juniper EX4000-12P</span><span class="stat-val" style="color:var(--gold);">19</span><span class="stat-pct"><span class="badge warn">mon</span></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTION 2: STOCK ALERT TABLE ── -->
+<div class="section" id="s2">
+  <div class="sec-title">In-Stock Alert Status — Full Detail</div>
+  <div class="g3" style="margin-bottom:10px;">
+    <div class="card crit-top" style="text-align:center;padding:16px;">
+      <div class="card-label">Critical Items</div>
+      <div class="kpi-val crit">7</div>
+    </div>
+    <div class="card" style="text-align:center;padding:16px;--top:var(--low);">
+      <div class="card-label">Low Items</div>
+      <div class="kpi-val" style="color:var(--low);">4</div>
+    </div>
+    <div class="card gold-top" style="text-align:center;padding:16px;">
+      <div class="card-label">Monitor Items</div>
+      <div class="kpi-val gold">9</div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card" style="overflow:auto;max-height:360px;">
+      <div class="card-label">Critical & Low</div>
+      <table>
+        <thead><tr><th>Model</th><th>Category</th><th style="text-align:right">Units</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Juniper EX4000-24P</td><td>Networking</td><td class="num">1</td><td><span class="badge crit">Critical</span></td></tr>
+          <tr><td>FortiGate 401F</td><td>Networking</td><td class="num">2</td><td><span class="badge crit">Critical</span></td></tr>
+          <tr><td>Juniper EX4000-48P</td><td>Networking</td><td class="num">2</td><td><span class="badge crit">Critical</span></td></tr>
+          <tr><td>Mist AP43</td><td>Networking</td><td class="num">3</td><td><span class="badge crit">Critical</span></td></tr>
+          <tr><td>Dell Pro 14</td><td>Laptop</td><td class="num">6</td><td><span class="badge crit">Critical</span></td></tr>
+          <tr><td>Brother HL-L5215DW</td><td>Printer</td><td class="num">1</td><td><span class="badge crit">Critical</span></td></tr>
+          <tr><td>PC42E-T</td><td>Printer</td><td class="num">1</td><td><span class="badge crit">Critical</span></td></tr>
+          <tr><td>Mist AP47D</td><td>Networking</td><td class="num">2</td><td><span class="badge low">Low</span></td></tr>
+          <tr><td>Mist AP63E</td><td>Networking</td><td class="num">11</td><td><span class="badge low">Low</span></td></tr>
+          <tr><td>BlueDriver-LSB4</td><td>Peripherals</td><td class="num">17</td><td><span class="badge low">Low</span></td></tr>
+          <tr><td>Brother B&amp;W Printer</td><td>Printer</td><td class="num">5</td><td><span class="badge low">Low</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card" style="overflow:auto;max-height:360px;">
+      <div class="card-label">Monitor & Good</div>
+      <table>
+        <thead><tr><th>Model</th><th>Deployable</th><th>Threshold</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Galaxy S22 5G</td><td class="num">1,211</td><td class="num">1,000</td><td><span class="badge good">Good</span></td></tr>
+          <tr><td>Ricoh Theta X</td><td class="num">242</td><td class="num">100</td><td><span class="badge good">Good</span></td></tr>
+          <tr><td>Peplink Antenna</td><td class="num">28</td><td class="num">10</td><td><span class="badge good">Good</span></td></tr>
+          <tr><td>Epson DS-530 II</td><td class="num">11</td><td class="num">10</td><td><span class="badge good">Good</span></td></tr>
+          <tr><td>Juniper EX4000-12P</td><td class="num">19</td><td class="num">20</td><td><span class="badge warn">Monitor</span></td></tr>
+          <tr><td>HVIN:V2000</td><td class="num">14</td><td class="num">15</td><td><span class="badge warn">Monitor</span></td></tr>
+          <tr><td>Intermec PD45</td><td class="num">18</td><td class="num">20</td><td><span class="badge warn">Monitor</span></td></tr>
+          <tr><td>Brother Color Printer</td><td class="num">14</td><td class="num">20</td><td><span class="badge warn">Monitor</span></td></tr>
+          <tr><td>MacBook Pro 16 M4</td><td class="num">4</td><td class="num">5</td><td><span class="badge warn">Monitor</span></td></tr>
+          <tr><td>Mist AP47</td><td class="num">4</td><td class="num">5</td><td><span class="badge warn">Monitor</span></td></tr>
+          <tr><td>Mist AP36</td><td class="num">6</td><td class="num">—</td><td><span class="badge warn">Monitor</span></td></tr>
+          <tr><td>PC42E-T Barcode</td><td class="num">21</td><td class="num">—</td><td><span class="badge warn">Monitor</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTION 3: CHECKOUT OVERVIEW ── -->
+<div class="section" id="s3">
+  <div class="sec-title">Checkout Activity</div>
+  <div class="g3" style="margin-bottom:10px;">
+    <div class="card" style="text-align:center;padding:14px;">
+      <div class="card-label">Devices Checked Out (FY)</div>
+      <div class="kpi-val">8K</div>
+    </div>
+    <div class="card accent-top" style="text-align:center;padding:14px;">
+      <div class="card-label">Checkouts Last 30 Days</div>
+      <div class="kpi-val accent">957</div>
+    </div>
+    <div class="card gold-top" style="text-align:center;padding:14px;">
+      <div class="card-label">Replacements Last 30 Days</div>
+      <div class="kpi-val gold">350</div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-label">Checkouts Last 30 Days by Category</div>
+      <div class="ch-wrap" style="height:320px;">
+        <canvas id="c3bar"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Replacements by Category</div>
+      <div class="ch-wrap" style="height:320px;">
+        <canvas id="c3bar2"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTION 4: LAPTOPS ── -->
+<div class="section" id="s4">
+  <div class="sec-title">Laptop Analysis</div>
+  <div class="g3" style="margin-bottom:10px;">
+    <div class="card" style="text-align:center;padding:14px;">
+      <div class="card-label">Created (FY)</div>
+      <div class="kpi-val">491</div>
+    </div>
+    <div class="card accent-top" style="text-align:center;padding:14px;">
+      <div class="card-label">Checked Out (FY)</div>
+      <div class="kpi-val accent">724</div>
+    </div>
+    <div class="card gold-top" style="text-align:center;padding:14px;">
+      <div class="card-label">Checkouts Last 30 Days</div>
+      <div class="kpi-val gold">89</div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-label">Checkout Justification</div>
+      <div class="ch-wrap" style="height:200px;"><canvas id="c4pie1"></canvas></div>
+      <div style="margin-top:10px;">
+        <div class="prog-row"><div class="prog-header"><span class="prog-name">Replacement</span><span class="prog-val">35 (39.8%)</span></div><div class="prog-bg"><div class="prog-fill" style="width:100%;background:var(--accent);"></div></div></div>
+        <div class="prog-row"><div class="prog-header"><span class="prog-name">Additional Device</span><span class="prog-val">23 (26.1%)</span></div><div class="prog-bg"><div class="prog-fill" style="width:65%;background:var(--steel);"></div></div></div>
+        <div class="prog-row"><div class="prog-header"><span class="prog-name">New Hire</span><span class="prog-val">20 (22.7%)</span></div><div class="prog-bg"><div class="prog-fill" style="width:57%;background:var(--good);"></div></div></div>
+        <div class="prog-row"><div class="prog-header"><span class="prog-name">New</span><span class="prog-val">6 (6.8%)</span></div><div class="prog-bg"><div class="prog-fill" style="width:17%;background:var(--gold);"></div></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Issue Reason</div>
+      <div class="ch-wrap" style="height:200px;"><canvas id="c4pie2"></canvas></div>
+      <div style="margin-top:10px;">
+        <div class="stat-row"><span class="stat-dot" style="background:#1A3A6B"></span><span class="stat-name">EOL Upgrade</span><span class="stat-val">7</span><span class="stat-pct">31.8%</span></div>
+        <div class="stat-row"><span class="stat-dot" style="background:#2D5FA8"></span><span class="stat-name">System Upgrade</span><span class="stat-val">6</span><span class="stat-pct">27.3%</span></div>
+        <div class="stat-row"><span class="stat-dot" style="background:#E8472A"></span><span class="stat-name">Software Issue</span><span class="stat-val">4</span><span class="stat-pct">18.2%</span></div>
+        <div class="stat-row"><span class="stat-dot" style="background:#A855F7"></span><span class="stat-name">Power/Battery</span><span class="stat-val">3</span><span class="stat-pct">13.6%</span></div>
+        <div class="stat-row"><span class="stat-dot" style="background:#F59E0B"></span><span class="stat-name">W11 Upgrade</span><span class="stat-val">2</span><span class="stat-pct">9.1%</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTION 5: DESKTOPS ── -->
+<div class="section" id="s5">
+  <div class="sec-title">Desktop Analysis</div>
+  <div class="g3" style="margin-bottom:10px;">
+    <div class="card" style="text-align:center;padding:14px;">
+      <div class="card-label">Created (FY)</div>
+      <div class="kpi-val">556</div>
+    </div>
+    <div class="card accent-top" style="text-align:center;padding:14px;">
+      <div class="card-label">Checked Out (FY)</div>
+      <div class="kpi-val accent">721</div>
+    </div>
+    <div class="card gold-top" style="text-align:center;padding:14px;">
+      <div class="card-label">Checkouts Last 30 Days</div>
+      <div class="kpi-val gold">98</div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-label">Checkout Justification</div>
+      <div class="ch-wrap" style="height:200px;"><canvas id="c5pie1"></canvas></div>
+      <div style="margin-top:10px;">
+        <div class="prog-row"><div class="prog-header"><span class="prog-name">New Hire</span><span class="prog-val">39 (42.4%)</span></div><div class="prog-bg"><div class="prog-fill" style="width:100%;background:var(--steel);"></div></div></div>
+        <div class="prog-row"><div class="prog-header"><span class="prog-name">Replacement</span><span class="prog-val">16 (17.4%)</span></div><div class="prog-bg"><div class="prog-fill" style="width:41%;background:var(--accent);"></div></div></div>
+        <div class="prog-row"><div class="prog-header"><span class="prog-name">New</span><span class="prog-val">14 (15.2%)</span></div><div class="prog-bg"><div class="prog-fill" style="width:36%;background:var(--good);"></div></div></div>
+        <div class="prog-row"><div class="prog-header"><span class="prog-name">W11 Upgrade</span><span class="prog-val">12 (13.0%)</span></div><div class="prog-bg"><div class="prog-fill" style="width:31%;background:var(--gold);"></div></div></div>
+        <div class="prog-row"><div class="prog-header"><span class="prog-name">Additional Device</span><span class="prog-val">6 (6.5%)</span></div><div class="prog-bg"><div class="prog-fill" style="width:15%;background:var(--dim);"></div></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Issue Reason</div>
+      <div class="ch-wrap" style="height:200px;"><canvas id="c5pie2"></canvas></div>
+      <div style="margin-top:10px;">
+        <div class="stat-row"><span class="stat-dot" style="background:#1A3A6B"></span><span class="stat-name">EOL Upgrade</span><span class="stat-val">5</span><span class="stat-pct">41.7%</span></div>
+        <div class="stat-row"><span class="stat-dot" style="background:#E8472A"></span><span class="stat-name">Software Issue</span><span class="stat-val">4</span><span class="stat-pct">33.3%</span></div>
+        <div class="stat-row"><span class="stat-dot" style="background:#2D5FA8"></span><span class="stat-name">System Upgrade</span><span class="stat-val">2</span><span class="stat-pct">16.7%</span></div>
+        <div class="stat-row"><span class="stat-dot" style="background:#F59E0B"></span><span class="stat-name">W11 Upgrade</span><span class="stat-val">1</span><span class="stat-pct">8.3%</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTION 6: MACBOOKS ── -->
+<div class="section" id="s6">
+  <div class="sec-title">MacBook Analysis</div>
+  <div class="g3" style="margin-bottom:10px;">
+    <div class="card" style="text-align:center;padding:14px;">
+      <div class="card-label">Created (FY)</div>
+      <div class="kpi-val">60</div>
+    </div>
+    <div class="card accent-top" style="text-align:center;padding:14px;">
+      <div class="card-label">Checked Out (FY)</div>
+      <div class="kpi-val accent">106</div>
+    </div>
+    <div class="card gold-top" style="text-align:center;padding:14px;">
+      <div class="card-label">Checkouts Last 30 Days</div>
+      <div class="kpi-val gold">14</div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-label">Checkout Justification</div>
+      <div class="ch-wrap" style="height:240px;"><canvas id="c6pie1"></canvas></div>
+      <div style="margin-top:10px;">
+        <div class="stat-row"><span class="stat-dot" style="background:#E8472A"></span><span class="stat-name">Replacement</span><span class="stat-val">10</span><span class="stat-pct">71.4%</span></div>
+        <div class="stat-row"><span class="stat-dot" style="background:#A855F7"></span><span class="stat-name">New Hire</span><span class="stat-val">3</span><span class="stat-pct">21.4%</span></div>
+        <div class="stat-row"><span class="stat-dot" style="background:#2D5FA8"></span><span class="stat-name">Additional Device</span><span class="stat-val">1</span><span class="stat-pct">7.1%</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Issue Reason</div>
+      <div class="ch-wrap" style="height:240px;"><canvas id="c6pie2"></canvas></div>
+      <div style="margin-top:10px;">
+        <div class="stat-row"><span class="stat-dot" style="background:#1A3A6B"></span><span class="stat-name">System Upgrade</span><span class="stat-val">7</span><span class="stat-pct">87.5%</span></div>
+        <div class="stat-row"><span class="stat-dot" style="background:#E8472A"></span><span class="stat-name">Software Issue</span><span class="stat-val">1</span><span class="stat-pct">12.5%</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTION 7: DEVICE LIFECYCLE ── -->
+<div class="section" id="s7">
+  <div class="sec-title">Device Lifecycle & Age Analysis</div>
+  <div class="g2">
+    <div class="card" style="overflow:auto;max-height:460px;">
+      <div class="card-label">Oldest Models by Average Age</div>
+      <table>
+        <thead><tr><th>Model</th><th style="text-align:right">Avg Days</th><th style="text-align:right">Avg Yrs</th><th style="text-align:right">Devices</th></tr></thead>
+        <tbody>
+          <tr><td>Macbook Pro 15</td><td class="num" style="color:var(--crit)">2,631</td><td class="num">7</td><td class="num">11</td></tr>
+          <tr><td>Macbook Pro 13</td><td class="num" style="color:var(--crit)">2,514</td><td class="num">7</td><td class="num">4</td></tr>
+          <tr><td>MacBook Pro 16</td><td class="num" style="color:var(--low)">2,044</td><td class="num">6</td><td class="num">8</td></tr>
+          <tr><td>MacBook Pro 14</td><td class="num" style="color:var(--gold)">1,571</td><td class="num">4</td><td class="num">1</td></tr>
+          <tr><td>48 Port Switch CBS350</td><td class="num" style="color:var(--gold)">1,305</td><td class="num">4</td><td class="num">22</td></tr>
+          <tr><td>Latitude 7430</td><td class="num">1,141</td><td class="num">3</td><td class="num">100</td></tr>
+          <tr><td style="color:#FCA5A5;font-weight:600;">HP Pro 400 G9 ⚠</td><td class="num" style="color:#FCA5A5;">1,095</td><td class="num">3</td><td class="num" style="color:var(--accent);">3,267</td></tr>
+          <tr><td>MacBook Pro M2</td><td class="num">1,080</td><td class="num">3</td><td class="num">10</td></tr>
+          <tr><td>MacBook Pro M2 13"</td><td class="num">1,022</td><td class="num">3</td><td class="num">1</td></tr>
+          <tr><td>Macbook Pro M2 16"</td><td class="num">1,015</td><td class="num">3</td><td class="num">30</td></tr>
+          <tr><td>Macbook Pro M2 14"</td><td class="num">984</td><td class="num">3</td><td class="num">15</td></tr>
+          <tr><td>MacBook Air 15</td><td class="num">770</td><td class="num">2</td><td class="num">45</td></tr>
+          <tr><td>Macbook 16 M3</td><td class="num">755</td><td class="num">2</td><td class="num">40</td></tr>
+          <tr><td>ELiteBook 6G1I14_32G</td><td class="num">120</td><td class="num">0</td><td class="num">100</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="col">
+      <div class="card">
+        <div class="card-label">Age Distribution Chart</div>
+        <div class="ch-wrap" style="height:220px;"><canvas id="c7bar"></canvas></div>
+      </div>
+      <div class="card crit-top">
+        <div class="card-label">EOL Priority — HP Pro 400 G9</div>
+        <div style="display:flex;align-items:baseline;gap:10px;margin:8px 0;">
+          <div class="kpi-val crit" style="font-size:42px;">3,267</div>
+          <div style="font-size:12px;color:var(--dim);">devices</div>
+        </div>
+        <div style="font-size:12px;color:#B0C4DE;line-height:1.6;">Averaging <strong style="color:var(--gold);">3 years old</strong> — largest single EOL refresh candidate in the fleet. Immediate procurement planning recommended.</div>
+      </div>
+      <div class="card" style="border-color:rgba(239,68,68,.2);">
+        <div class="card-label">MacBook Pro 15/13</div>
+        <div style="display:flex;gap:16px;align-items:baseline;">
+          <div><div class="kpi-val crit" style="font-size:32px;">7 yrs</div><div style="font-size:10px;color:var(--dim);">avg age</div></div>
+          <div><div class="kpi-val" style="font-size:28px;color:#B0C4DE;">15 devices</div><div style="font-size:10px;color:var(--dim);">combined</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTION 8: KEY TAKEAWAYS ── -->
+<div class="section" id="s8">
+  <div class="sec-title">Key Takeaways & Action Items</div>
+  <div class="g2" style="height:calc(100% - 30px);">
+    <div class="col">
+      <div class="card crit-top f1">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span class="badge crit">Action Required</span>
+          <div style="font-size:13px;font-weight:600;color:#fff;">Critical Stock Alerts</div>
+        </div>
+        <div style="font-size:12px;color:#B0C4DE;line-height:1.7;">Juniper EX4000-24P has only <strong style="color:var(--crit);">1 unit</strong> remaining (threshold: 50). FortiGate 401F at <strong style="color:var(--crit);">2 units</strong>. Juniper EX4000-48P at <strong style="color:var(--crit);">2 units</strong>. Immediate procurement required for all 7 critical items.</div>
+      </div>
+      <div class="card f1" style="border-color:rgba(245,158,11,.2);">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span class="badge warn">Monitor</span>
+          <div style="font-size:13px;font-weight:600;color:#fff;">Inventory Dominated by Mobile & Desktop</div>
+        </div>
+        <div style="font-size:12px;color:#B0C4DE;line-height:1.7;">Mobile Devices (<strong style="color:var(--white);">3,052</strong>) and Desktops (<strong style="color:var(--white);">2,399</strong>) hold the most in-stock units across 40+ categories. Galaxy S22 5G at 1,211 units vs 1,000 threshold — Good status.</div>
+      </div>
+      <div class="card f1" style="border-color:rgba(232,71,42,.2);">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span class="badge low">Insight</span>
+          <div style="font-size:13px;font-weight:600;color:#fff;">Replacement is the #1 Checkout Driver</div>
+        </div>
+        <div style="font-size:12px;color:#B0C4DE;line-height:1.7;">Replacement leads laptop checkouts at <strong style="color:var(--accent);">39.77%</strong>. Mobile devices account for <strong style="color:var(--accent);">43.7%</strong> of all 30-day replacements (153 of 350). Camera is second at 66 replacements.</div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card crit-top f1">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span class="badge crit">EOL Risk</span>
+          <div style="font-size:13px;font-weight:600;color:#fff;">HP Pro 400 G9 — Largest Refresh Needed</div>
+        </div>
+        <div style="font-size:12px;color:#B0C4DE;line-height:1.7;"><strong style="color:var(--crit);">3,267 devices</strong> averaging 3 years old. MacBook Pro 15 and 13 averaging <strong style="color:var(--crit);">7 years</strong> — well past EOL. These are the highest priority refresh candidates in the fleet.</div>
+      </div>
+      <div class="card f1" style="border-color:rgba(34,197,94,.15);">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span class="badge good">Good</span>
+          <div style="font-size:13px;font-weight:600;color:#fff;">Strong Mobile & Camera Availability</div>
+        </div>
+        <div style="font-size:12px;color:#B0C4DE;line-height:1.7;">Galaxy S22 5G: <strong style="color:var(--good);">1,211 units</strong> vs 1,000 threshold. Ricoh Theta X: <strong style="color:var(--good);">242 units</strong> vs 100 threshold. Both well above thresholds — no action needed.</div>
+      </div>
+      <div class="card f1">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span class="badge warn">Note</span>
+          <div style="font-size:13px;font-weight:600;color:#fff;">MacBook EOL Upgrade is Primary Issue</div>
+        </div>
+        <div style="font-size:12px;color:#B0C4DE;line-height:1.7;">System Upgrade drives <strong style="color:var(--gold);">87.5%</strong> of MAC issue checkouts — indicating a planned refresh cycle is underway. EOL Upgrade leads both laptop and desktop issue reasons at 31.8% and 41.7% respectively.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /sections -->
+
+<!-- FOOTER NAV -->
+<div id="footer">
+  <div class="nav-label" id="sec-label">Fleet Overview</div>
+  <div class="nav-dots" id="dots"></div>
+  <div class="nav-label" id="timer-label">Next: 20s</div>
+</div>
+
+<script>
+const SECTIONS = [
+  { id:'s0', label:'Fleet Overview' },
+  { id:'s1', label:'In-Stock by Category' },
+  { id:'s2', label:'Stock Alert Status' },
+  { id:'s3', label:'Checkout Activity' },
+  { id:'s4', label:'Laptop Analysis' },
+  { id:'s5', label:'Desktop Analysis' },
+  { id:'s6', label:'MacBook Analysis' },
+  { id:'s7', label:'Device Lifecycle' },
+  { id:'s8', label:'Key Takeaways' },
+];
+const INTERVAL = 20000; // 20 seconds per section
+
+let cur = 0;
+let timeLeft = INTERVAL;
+let ticker;
+
+// Build dots
+const dotsEl = document.getElementById('dots');
+SECTIONS.forEach((s,i) => {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i===0?' active':'');
+  d.onclick = () => goTo(i);
+  dotsEl.appendChild(d);
+});
+
+function goTo(idx) {
+  clearInterval(ticker);
+  const old = document.getElementById(SECTIONS[cur].id);
+  old.classList.remove('active');
+  old.classList.add('exit');
+  setTimeout(() => old.classList.remove('exit'), 700);
+  cur = idx;
+  const el = document.getElementById(SECTIONS[cur].id);
+  el.classList.add('active');
+  document.getElementById('sec-label').textContent = SECTIONS[cur].label;
+  document.querySelectorAll('.dot').forEach((d,i) => d.classList.toggle('active', i===cur));
+  timeLeft = INTERVAL;
+  startTicker();
+}
+
+function next() { goTo((cur+1) % SECTIONS.length); }
+
+function startTicker() {
+  const strip = document.getElementById('pstrip');
+  const timerEl = document.getElementById('timer-label');
+  const start = Date.now();
+  strip.style.transition = 'none';
+  strip.style.width = '100%';
+  requestAnimationFrame(() => {
+    strip.style.transition = `width ${INTERVAL}ms linear`;
+    strip.style.width = '0%';
+  });
+  ticker = setInterval(() => {
+    const elapsed = Date.now() - start;
+    const rem = Math.max(0, Math.ceil((INTERVAL - elapsed) / 1000));
+    timerEl.textContent = `Next: ${rem}s`;
+    if (elapsed >= INTERVAL) { clearInterval(ticker); next(); }
+  }, 500);
+}
+
+// Clock
+setInterval(() => {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}, 1000);
+
+// ─── CHARTS ───
+const gc = '#122040', lc = '#6B8BB5', ff = "'Barlow',sans-serif";
+const chartDefs = {
+  responsive:true, maintainAspectRatio:false,
+  plugins:{ legend:{ display:false } },
+};
+function axOpts(x={},y={}) {
+  return { scales:{ x:{ grid:{color:gc}, ticks:{color:lc,font:{size:9,family:ff}}, ...x }, y:{ grid:{color:gc}, ticks:{color:lc,font:{size:9,family:ff}}, ...y } } };
+}
+
+// S0 — bar
+new Chart('c0bar',{ type:'bar', data:{ labels:['In Use','In Stock','E-Waste','Pending'], datasets:[{ data:[45600,11600,11500,1200], backgroundColor:['#1A3A6B','#22C55E','#F59E0B','#E8472A'], borderRadius:4 }] }, options:{...chartDefs,...axOpts(),plugins:{legend:{display:false}}} });
+
+// S0 — doughnut
+new Chart('c0pie',{ type:'doughnut', data:{ labels:['In Use','In Stock','E-Waste','Pending'], datasets:[{ data:[45600,11600,11500,1200], backgroundColor:['#1A3A6B','#22C55E','#F59E0B','#E8472A'], borderWidth:1, borderColor:'#060E1C' }] }, options:{...chartDefs, cutout:'60%'} });
+
+// S1 — bar
+new Chart('c1bar',{ type:'bar', data:{ labels:['Mobile','Desktop','Networking','Monitors','Laptop','Camera','Docking Stn','Peripherals','Printer','Webcam'], datasets:[{ data:[3052,2399,1018,753,610,481,319,233,158,121], backgroundColor:'#2D5FA8', borderRadius:3, hoverBackgroundColor:'#E8472A' }] }, options:{...chartDefs,...axOpts({ticks:{color:lc,font:{size:8,family:ff},maxRotation:30}}),plugins:{legend:{display:false}}} });
+
+// S3 — checkouts bar
+new Chart('c3bar',{ type:'bar', data:{ labels:['Mobile','Monitors','Desktop','Laptop','Camera','Networking','Webcam','Docking','Peripheral','Hard Drive'], datasets:[{ data:[272,163,98,89,79,57,54,45,28,19], backgroundColor:'#E8472A', borderRadius:3 }] }, options:{...chartDefs,...axOpts({ticks:{color:lc,font:{size:8,family:ff},maxRotation:30}}),plugins:{legend:{display:false}}} });
+
+// S3 — replacements bar
+new Chart('c3bar2',{ type:'bar', data:{ labels:['Mobile','Camera','Laptop','Desktop','Monitors','Networking','Peripheral','MacBook','Docking','Printer'], datasets:[{ data:[153,66,33,14,13,13,11,9,6,5], backgroundColor:'#F59E0B', borderRadius:3 }] }, options:{...chartDefs,...axOpts({ticks:{color:lc,font:{size:8,family:ff},maxRotation:30}}),plugins:{legend:{display:false}}} });
+
+// S4 pies
+new Chart('c4pie1',{ type:'pie', data:{ labels:['Replacement','Addl Device','New Hire','New','Termination'], datasets:[{ data:[35,23,20,6,1], backgroundColor:['#E8472A','#2D5FA8','#22C55E','#F59E0B','#64748B'], borderWidth:1, borderColor:'#060E1C' }] }, options:chartDefs });
+new Chart('c4pie2',{ type:'pie', data:{ labels:['EOL Upgrade','System Upgrade','Software Issue','Power/Battery','W11 Upgrade'], datasets:[{ data:[7,6,4,3,2], backgroundColor:['#1A3A6B','#2D5FA8','#E8472A','#A855F7','#F59E0B'], borderWidth:1, borderColor:'#060E1C' }] }, options:chartDefs });
+
+// S5 pies
+new Chart('c5pie1',{ type:'pie', data:{ labels:['New Hire','Replacement','New','W11 Upgrade','Additional','Termination'], datasets:[{ data:[39,16,14,12,6,3], backgroundColor:['#2D5FA8','#E8472A','#22C55E','#F59E0B','#A855F7','#64748B'], borderWidth:1, borderColor:'#060E1C' }] }, options:chartDefs });
+new Chart('c5pie2',{ type:'pie', data:{ labels:['EOL Upgrade','Software Issue','System Upgrade','W11 Upgrade'], datasets:[{ data:[5,4,2,1], backgroundColor:['#1A3A6B','#E8472A','#2D5FA8','#F59E0B'], borderWidth:1, borderColor:'#060E1C' }] }, options:chartDefs });
+
+// S6 pies
+new Chart('c6pie1',{ type:'pie', data:{ labels:['Replacement','New Hire','Addl Device'], datasets:[{ data:[10,3,1], backgroundColor:['#E8472A','#A855F7','#2D5FA8'], borderWidth:1, borderColor:'#060E1C' }] }, options:chartDefs });
+new Chart('c6pie2',{ type:'pie', data:{ labels:['System Upgrade','Software Issue'], datasets:[{ data:[7,1], backgroundColor:['#1A3A6B','#E8472A'], borderWidth:1, borderColor:'#060E1C' }] }, options:chartDefs });
+
+// S7 — age bar
+new Chart('c7bar',{ type:'bar', data:{ labels:['MBP 15','MBP 13','MBP 16','MBP 14','48P Switch','Latitude','HP Pro 400','MBP M2'], datasets:[{ data:[2631,2514,2044,1571,1305,1141,1095,1080], backgroundColor:function(ctx){ const v=ctx.parsed.y; return v>2000?'#EF4444':v>1500?'#F97316':v>1100?'#F59E0B':'#2D5FA8'; }, borderRadius:3 }] }, options:{...chartDefs,...axOpts({ticks:{color:lc,font:{size:8,family:ff},maxRotation:30}},{ticks:{color:lc,font:{size:9,family:ff}}}),plugins:{legend:{display:false}}} });
+
+// Start rotation
+startTicker();
+</script>
+</body>
+</html>
